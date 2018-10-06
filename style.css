@@ -1,6 +1,13 @@
 body {
-  background-color: black
+  background-color: black;
 }
+
+#scoreboard {
+  margin: auto;
+  font-size: 30px;
+  color:white
+}
+
 
 canvas {
   padding-left: 0;
@@ -11,7 +18,8 @@ canvas {
 
 
 
-  width: 100%;
+  width: 75%;
+
   background-color: gray;
   image-rendering: -moz-crisp-edges;
   image-rendering: -webkit-crisp-edges;

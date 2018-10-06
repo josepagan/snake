@@ -41,12 +41,6 @@ class Snake {
     } else return this.snakeHeadPos.y
   }
 
-  // get fullSnakePos(){
-  //     (for elem of this.pos)
-  // }
-
-
-
 
   move() {
     this.body.push(new Pixel(this.newHeadPosX, this.newHeadPosY));
@@ -74,29 +68,40 @@ class Game {
     this._context = canvas.getContext('2d');
     this._gameOver = false;
     this._score = 0;
+    this._hiScore = 0;
+    scoreBoard.textContent = this._score;
+    hiScoreBoard.textContent = this._hiScore;
 
     this.snake = new Snake(10, 10);
-    this.apple = new Food(Math.floor((Math.random() * this._canvas.width) + 1), Math.floor((Math.random() * this._canvas.height) + 1));
+    this.apple = new Food(Math.floor((Math.random() * this._canvas.width)), Math.floor((Math.random() * this._canvas.height)));
     this.snake.dir = 'RIGHT';
+    this._justEaten
 
 
 
-    this._refresh = setInterval(this.loop.bind(this), 1000 / 60 * 10)
+    // this._refresh = setInterval(this.loop.bind(this), 1000 / 60 * 8)
+    this._refresh = setInterval(() => {this.loop()}, 1000 / 60 * 8)
     this._frame = 0;
-
-
-
-
 
 
   }
 
-  reset() {}
+  reStart() {
+    this._gameOver = false;
+    console.log("restart triggered");
+    canvas.style.backgroundColor = "gray";
+    this._score = 0;
+    scoreBoard.textContent = this._score;
+    this.snake.body = [{x:10,y:10}];
+    this._refresh = setInterval(() => {this.loop()}, 1000 / 60 * 8)
+  }
 
   gameOver() {
-    clearInterval(this._refresh);
-    console.log(this._score);
 
+    clearInterval(this._refresh);
+    this._context.clearRect(0, 0, canvas.width, canvas.height)
+    canvas.style.backgroundColor = "red";
+    console.log("hold screen for restart");
   }
 
   drawFood(obj) {
@@ -108,52 +113,53 @@ class Game {
     this._context.fillStyle = obj.color;
     this.snake.body.forEach(part => this._context.fillRect(part.x, part.y, 1, 1))
   }
-
+//big arse collision function. I know I should split it, make it clever. Some day.
   collide() {
-    let element;
+    //food collision
     if (this.snake.snakeHeadPos.x === this.apple.pos.x && this.snake.snakeHeadPos.y === this.apple.pos.y) {
       console.log("OMG")
       this._score++;
-      this.apple = new Food(Math.floor((Math.random() * this._canvas.width) + 1), Math.floor((Math.random() * this._canvas.height) + 1));
-      this.snake.grow()
+      if (this._score > this._hiScore) {
+        this._hiScore = this._score;
+      }
+      scoreBoard.textContent = this._score;
+      hiScoreBoard.textContent = this._hiScore;
+
+      this.apple = new Food(Math.floor((Math.random() * this._canvas.width)), Math.floor((Math.random() * this._canvas.height)));
+      this._justEaten = true;
     }
-
+    //snake colliding with its body
     for (let element of this.snake.snakeRestBodyPos) {
-      if (JSON.stringify(element) === JSON.stringify(this.snake.snakeHeadPos)) {
-        console.log("Snake touching itself!!!!");
+      let x = element.x;
+      let y = element.y
+      if (x == this.snake.snakeHeadPos.x && y == this.snake.snakeHeadPos.y) {
         this._gameOver = true;
-
       }
     }
-
+    //snake off canvas
     if (this.snake.snakeHeadPos.x > this._canvas.width || this.snake.snakeHeadPos.x < 0 ||
       this.snake.snakeHeadPos.y > this._canvas.height || this.snake.snakeHeadPos.y < 0) {
-      console.log('Para alla que se va la bicha!!!');
       this._gameOver = true;
     }
-
-
   }
-
-
-
-
-
 
   loop() {
     if (this._gameOver) {
       this.gameOver()
     } else {
 
-      this._context.clearRect(0, 0, canvas.width, canvas.height)
+      this._context.clearRect(0, 0, canvas.width, canvas.height);
+      this._frame ++;
+      console.log(this._frame);
       this.drawSnake(this.snake);
       this.drawFood(this.apple);
-      // this._context.font = "5px Arial";
-      // this._context.fillText("Hello World",1,1);
-
-      this.collide()
+      this.collide();
+            if (this._justEaten){
+        this.snake.grow()
+      } else {
       this.snake.move()
-      this._frame++
+      }
+      this._justEaten = false;
     }
 
 
@@ -163,7 +169,11 @@ class Game {
 };
 
   const canvas = document.getElementById('myCanvas');
+const pageBody = document.getElementsByTagName("BODY")[0];
+  const scoreBoard = document.getElementById('score');
+const hiScoreBoard = document.getElementById("hiScore");
   const game = new Game(canvas);
+console.log("game starting");
 
   document.addEventListener("keydown", keyDownHandler, false);
   // document.addEventListener("keyup", keyUpHandler, false);
@@ -180,10 +190,12 @@ class Game {
       game.snake.dir = "UP"
     } else if (e.keyCode == 39 && game.snake.dir != "LEFT") {
       game.snake.dir = "RIGHT"
+    } else if (e.keyCode == 32 && game._gameOver) {
+      game.reStart();
     }
   }
 
-  var hammertime = new Hammer(canvas);
+  var hammertime = new Hammer(pageBody);
   hammertime.on('panleft panright panup pandown press', function(ev) {
     if (ev.type == "pandown" && game.snake.dir != "UP") {
       game.snake.dir = "DOWN";
@@ -194,7 +206,6 @@ class Game {
     } else if (ev.type == "panright" && game.snake.dir != "LEFT") {
       game.snake.dir = "RIGHT";
     } else if (ev.type = "press" && game._gameOver) {
-      location.reload()
-    }
+    game.reStart()}
 
   });
